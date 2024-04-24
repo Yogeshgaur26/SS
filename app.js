@@ -8,8 +8,8 @@ const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 app.set('view engine', 'ejs');
 
-// Connect to MongoDB Atlas
-mongoose.connect('mongodb+srv://yogeshgaur2626:123@cluster0.cymalup.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', {
+// Connect to MongoDB Atlas and specify the database name
+mongoose.connect("mongodb+srv://yogeshgaur2626:123@cluster0.cymalup.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0", {
   useNewUrlParser: true,
   useUnifiedTopology: true
 }).then(() => {
@@ -21,7 +21,8 @@ mongoose.connect('mongodb+srv://yogeshgaur2626:123@cluster0.cymalup.mongodb.net/
 // Define Mongoose schema and model
 const userSchema = new mongoose.Schema({
   username: String,
-  email: String
+  email: String,
+  password: String // Add password field to your schema
 });
 
 const User = mongoose.model('User', userSchema);
@@ -50,25 +51,32 @@ app.get('/signup', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'signup.html'));
 });
 
-app.post('/users', async (req, res) => {
-  const { username, email } = req.body;
+// Route to handle user signup
+app.post('/signup', async (req, res) => {
+  const { username, email, password } = req.body;
   try {
-    const newUser = new User({ username, email });
+    const newUser = new User({ username, email, password });
     await newUser.save();
-    res.redirect('/users');
+    res.send('User registered successfully!');
   } catch (err) {
     console.error('Error saving user:', err.message);
-    res.redirect('/');
+    res.status(500).send('Internal Server Error');
   }
 });
 
-app.get('/users', async (req, res) => {
+// Route to handle user login
+app.post('/login', async (req, res) => {
+  const { username, password } = req.body;
   try {
-    const users = await User.find({});
-    res.render('users', { users });
+    const user = await User.findOne({ username, password });
+    if (user) {
+      res.send('Login successful!');
+    } else {
+      res.send('Invalid username or password.');
+    }
   } catch (err) {
-    console.error('Error finding users:', err.message);
-    res.redirect('/');
+    console.error('Error finding user:', err.message);
+    res.status(500).send('Internal Server Error');
   }
 });
 
